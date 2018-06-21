@@ -1,0 +1,103 @@
+#!/bin/bash
+# -*- coding: utf-8	-*-
+# Using env bash is considered harmful:
+# https://unix.stackexchange.com/questions/206350/what-is-the-difference-if-i-start-bash-with-bin-bash-or-usr-bin-env-bash
+###!/usr/bin/env bash
+# I call this the unofficial bash strict mode. This causes bash to behave in a way that makes many classes of subtle bugs impossible. You'll spend much less time debugging, and also avoid having unexpected complications in production.
+# https://github.com/TjWallas/bash-cookiecutter/blob/master/%7B%7Bcookiecutter.dir_name%7D%7D/%7B%7Bcookiecutter.script_name%7D%7D.sh
+# https://copr-be.cloud.fedoraproject.org/results/lantw44/chromium/fedora-27-x86_64/
+# https://sipb.mit.edu/doc/safe-shell/
+# GLOBBING IS NOT ALLOWED!!
+set -euf -o pipefail
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+IFS=$'\n\t'
+
+export LC_ALL=C
+
+[[ $LANG =~ UTF-?8$ ]] && echo "# -*- coding: utf-8 -*-"
+
+
+# https://zxq9.com/archives/795
+# date_string=$(date +"%Y%b%d%H%M%S%Z")
+# date_hex="$(date --rfc-3339=ns)"
+# UUID="$(uuidgen -t)"
+# https://tools.ietf.org/html/rfc3339#section-5.6
+# https://www.howtoforge.com/linux-date-command/
+# date +"%F-%T-%Z"
+# echo -e "$date_string" | tr '[:upper:]' '[:lower:]'
+# echo -e ${date_string,} # UPPER
+# https://ok-b.org/t/6250698/how-to-decode-urlencoded-string-in-shell
+# echo -e ${date_string,,}
+# echo -e ${date_string}
+# date to hex encode
+# decode with  : echo -n ${date_hex} | xxd -r -p
+# echo -n ${date_hex} | od -A n -t x1 | sed 's/ //g'
+# echo -n ${date_hex} | hexdump -e '"%X"'
+# echo -n ${date_hex} | xxd -r -p
+# echo -e "${date_string}"-"$(echo -e "${date_hex}" | xxd -pu)"
+# echo -e "${date_string}"+"$(echo -e "${date_hex}"+"${UUID}" | xxd -r -p)"
+# cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1
+# curl -sS https://now.httpbin.org/ | python -mjson.tool | grep -i "origin" | awk -F'"' '{print $4}'
+# {"now": {"epoch": 1508426424.59536, "slang_date": "today", "slang_time": "now", "iso8601": "2017-10-19T15:20:24.595360Z", "rfc2822": "Thu, 19 Oct 2017 15:20:24 GMT", "rfc3339": "2017-10-19T15:20:24.59Z"}, "urls": ["/", "/docs", "/when/:human-timestamp", "/parse/:machine-timestamp"]}
+# date --iso-8601=ns
+# date --rfc-3339=ns
+# https://www.redspin.com/it-security-blog/2009/07/string-encoding-in-the-shell/
+# https://www.unix.com/tips-and-tutorials/31944-simple-date-time-calulation-bash.html
+# httpbin_date="$(curl -sS https://now.httpbin.org | python -mjson.tool)"
+# https://github.com/koalaman/shellcheck/wiki/SC2059
+# coverage='96%'
+# printf "Unit test coverage: %s\n" "$coverage"
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# date --utc --date $(date -u +"%Y-%m-%d") "+%Y-%m-%d %T"
+# date --date $(date -u +"%Y-%m-%d") "+%Y-%m-%d %T %Z"
+# "rfc3339": "2017-12-31T11:51:47.15Z",
+# https://unix.stackexchange.com/questions/120484/what-is-a-standard-command-for-printing-a-date-in-rfc-3339-format
+# date_rfc3339=$(date --rfc-3339=ns | sed 's/ /T/; s/\(\....\).*-/\1-/g')
+# date_rfc3339=$(date --rfc-3339=ns)
+# date_rfc3339_tz=$(date --date $(date -u +"%Y-%m-%d") "+%Z")
+# date_uuid_hex="$(printf "${date_hex}"+"$(printf "${date_hex}"+"${UUID}" | xxd -pu)" | tr -d "\\n")"
+# printf "${date_uuid_hex}" | xclip -selection cliboard && printf "${date_uuid_hex}"
+# printf "${date_uuid_hex}" | xxd -r -p
+#[[ -n "${httpbin_date}" ]] && {
+#	printf "%s\\n" "${httpbin_date}"
+#}
+# https://github.com/zant95/hBlock/blob/master/hblock
+
+HOSTNAME="$(hostname -a)"
+HOSTSFILE="/etc/hosts"
+
+
+# Default header block
+HEADER=$(cat <<-EOF
+    127.0.0.1       localhost ${HOSTNAME}
+    255.255.255.255 broadcasthost
+    ::1             localhost ip6-localhost ip6-loopback
+    fe00::0         ip6-localnet
+    ff00::0         ip6-mcastprefix
+    ff02::1         ip6-allnodes
+    ff02::2         ip6-allrouters
+    ff02::3         ip6-allhosts
+EOF
+)
+   
+   
+orighosts() {
+    printf "original plain hosts file"
+    # [ -n "$header" ]    && printf -- '\n%s\n%s\n%s\n' '# <header>'    "$header"    '# </header>'
+    [[ -n "${HEADER}" ]] && printf -- "%s\\n" "${HEADER}" > "${HOSTSFILE}"
+    printf "${HEADER}"
+}
+
+
+hblockhosts() {
+    printf "downloading & generating hblock hosts file"
+    hblock --output "${HOSTSFILE}" >/dev/null 2>&1
+}
+
+# sometimes https://francescocirillo.com/pages/anti-if-campaign is impossible
+if [[ -f "${HOSTSFILE}" && $(stat -c%s "$HOSTSFILE") -gt 1000 ]]
+then
+    orighosts
+else
+    hblockhosts
+fi
