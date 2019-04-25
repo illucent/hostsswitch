@@ -2,7 +2,6 @@
 # -*- coding: utf-8	-*-
 
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # some ascii art
 #                            +--------------+
 #                           /|             /|
@@ -25,9 +24,24 @@
 # GLOBBING IS NOT ALLOWED!!
 set -euf -o pipefail
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
-IFS=$'\n\t'
+# IFS=$'\n\t'
 
-export LC_ALL=C
+# https://github.com/ayeowch/bitnodes/wiki/Provisioning-Bitcoin-Network-Crawler
+#vi /etc/hosts
+#    127.0.0.1 localhost
+#    [IP_ADDRESS] [HOSTNAME]
+#    ::1 ip6-localhost ip6-loopback
+#    fe00::0 ip6-localnet
+#    ff00::0 ip6-mcastprefix
+#    ff02::1 ip6-allnodes
+#    ff02::2 ip6-allrouters
+#    ff02::3 ip6-allhosts
+#    [IPV6_ADDRESS] [HOSTNAME]
+
+
+# export LC_ALL=C
+# export LC_ALL=en_GB.UTF-8
+# https://linux.die.net/man/1/printf
 
 # https://github.com/anordal/shellharden/blob/master/how_to_do_things_safely_in_bash.md
 shopt -s nullglob globstar
@@ -50,27 +64,34 @@ HEADER=$(cat <<-EOF
     ff02::3         ip6-allhosts
 EOF
 )
-   
-   
-orighosts() {
+
+
+orighosts()
+{
     # https://www.fileformat.info/info/unicode/char/search.htm?q=return&preview=entity
-    printf "\\u23CE original plain hosts file"
+    printf "\\u23CE original plain hosts file\\n"
+
     # [ -n "$header" ]    && printf -- '\n%s\n%s\n%s\n' '# <header>'    "$header"    '# </header>'
     [[ -n "${HEADER}" ]] && printf -- "%s\\n" "${HEADER}" > "${HOSTSFILE}"
-    printf "${HEADER}"
+
+    printf "${HEADER}\\n"
 }
 
 
-hblockhosts() {
+hblockhosts()
+{
     # https://www.fileformat.info/info/unicode/char/2588/index.htm
-    printf "\\u2588 downloading & generating hBlock hosts file"
+    printf "\\u2588 downloading & generating hBlock hosts file "
+    printf "hBlock $(hblock -v)\\n"
     # https://github.com/zant95/hBlock/blob/master/hblock
     hblock --output "${HOSTSFILE}" >/dev/null 2>&1
 }
 
 
+((EUID != 0)) && printf "must be root user\\n" && exit 1
+
 # sometimes https://francescocirillo.com/pages/anti-if-campaign is impossible
-if [[ -f "${HOSTSFILE}" && $(stat -c%s "$HOSTSFILE") -gt 1000 ]]
+if [[ -f "${HOSTSFILE}" && $(stat -c%s "$HOSTSFILE") -gt 1000 ]];
 then
     orighosts
 else
